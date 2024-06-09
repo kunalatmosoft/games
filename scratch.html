@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>At-Scratch</title>
+    <link rel="icon" href="https://th.bing.com/th/id/OIP.JW4_m9cH_KS3mvIXY7kmqwHaF9?rs=1&pid=ImgDetMain" type="image/x-icon">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #ff7e5f, #feb47b);
+            margin: 0;
+            font-family: Arial, sans-serif;
+            flex-direction: column;
+        }
+
+        .scratch-card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .scratch-card {
+            position: relative;
+            width: 200px;
+            height: 150px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        #scratch-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .offer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            display: none;
+        }
+
+        .reset-button {
+            margin-top: 20px;
+            background-color: #ff7e5f;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="scratch-card-grid" id="scratch-card-grid"></div>
+    <button class="reset-button" id="reset-button" style="display: none;">Play Again</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+    <script>
+        const scratchCardGrid = document.getElementById('scratch-card-grid');
+        const resetButton = document.getElementById('reset-button');
+
+        const offers = [
+            "You have won a 50% discount!",
+            "You have won a free gift!",
+            "You have won a $10 voucher!",
+            "You have won a buy 1 get 1 free!",
+            "You have won a mystery prize!",
+            "You have won a 25% discount!",
+            "You have won a free subscription!",
+            "You have won a free upgrade!",
+            "You have won a $5 gift card!"
+        ];
+
+        for (let i = 0; i < 9; i++) {
+            createScratchCard(i, offers[i]);
+        }
+
+        function createScratchCard(index, offer) {
+            const scratchCard = document.createElement('div');
+            scratchCard.classList.add('scratch-card');
+            scratchCard.innerHTML = `
+                <canvas id="scratch-canvas-${index}"></canvas>
+                <div class="offer-text" id="offer-text-${index}">${offer}</div>
+            `;
+            scratchCardGrid.appendChild(scratchCard);
+
+            const canvas = document.getElementById(`scratch-canvas-${index}`);
+            const ctx = canvas.getContext('2d');
+            const offerText = document.getElementById(`offer-text-${index}`);
+
+            canvas.width = scratchCard.offsetWidth;
+            canvas.height = scratchCard.offsetHeight;
+
+            let isDrawing = false;
+            let scratchedPixels = 0;
+            const totalPixels = canvas.width * canvas.height;
+            const revealThreshold = 0.7; // 70%
+
+            ctx.fillStyle = '#ccc';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('touchstart', startDrawing, { passive: true });
+            canvas.addEventListener('touchmove', draw, { passive: true });
+            canvas.addEventListener('touchend', stopDrawing);
+
+            function startDrawing(event) {
+                isDrawing = true;
+                draw(event);
+            }
+
+            function draw(event) {
+                if (!isDrawing) return;
+
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.lineWidth = 20;
+                ctx.lineCap = 'round';
+
+                let rect = canvas.getBoundingClientRect();
+                let x, y;
+
+                if (event.type.includes('touch')) {
+                    x = event.touches[0].clientX - rect.left;
+                    y = event.touches[0].clientY - rect.top;
+                } else {
+                    x = event.clientX - rect.left;
+                    y = event.clientY - rect.top;
+                }
+
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+
+                checkScratchCompletion();
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+                ctx.beginPath();
+            }
+
+            function checkScratchCompletion() {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                scratchedPixels = 0;
+
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    if (imageData.data[i + 3] === 0) {
+                        scratchedPixels++;
+                    }
+                }
+
+                if (scratchedPixels / totalPixels > revealThreshold) {
+                    offerText.style.display = 'block';
+                    canvas.removeEventListener('mousedown', startDrawing);
+                    canvas.removeEventListener('mousemove', draw);
+                    canvas.removeEventListener('mouseup', stopDrawing);
+                    canvas.removeEventListener('touchstart', startDrawing);
+                    canvas.removeEventListener('touchmove', draw);
+                    canvas.removeEventListener('touchend', stopDrawing);
+
+                    triggerConfetti();
+                    playSound();
+                    resetButton.style.display = 'block';
+                }
+            }
+        }
+
+        function triggerConfetti() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function playSound() {
+            const audio = new Audio('https://www.myinstants.com/media/sounds/tadaa.mp3');
+            audio.play().catch(error => console.log('Sound play error:', error));
+        }
+
+        resetButton.addEventListener('click', () => {
+            scratchCardGrid.innerHTML = '';
+            resetButton.style.display = 'none';
+            for (let i = 0; i < 9; i++) {
+                createScratchCard(i, offers[i]);
+            }
+        });
+    </script>
+</body>
+</html>
