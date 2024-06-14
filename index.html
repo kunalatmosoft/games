@@ -10,17 +10,20 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             background: linear-gradient(135deg, #ff7e5f, #feb47b);
             margin: 0;
             font-family: Arial, sans-serif;
             flex-direction: column;
+            text-align: center;
+            padding: 20px;
         }
 
         .scratch-card-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
+            overflow: auto;
         }
 
         .scratch-card {
@@ -65,14 +68,37 @@
             font-size: 16px;
             cursor: pointer;
         }
-        footer{
-            
+
+        footer {
             font-weight: bolder;
+        }
+
+        @media (max-width: 768px) {
+            .scratch-card-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .scratch-card-grid {
+                grid-template-columns: 1fr;
+                max-height: 60vh; /* Ensures the grid does not exceed the viewport height */
+                overflow-y: auto;
+            }
+
+            .scratch-card {
+                width: 100%;
+                height: auto;
+            }
+
+            .reset-button {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-   <h1>At-Scratch&copy;</h1>
+    <h1>At-Scratch&copy;</h1>
     <div class="scratch-card-grid" id="scratch-card-grid"></div>
    
     <button class="reset-button" id="reset-button" style="display: none;">Play Again</button>
@@ -212,8 +238,7 @@
             }
         });
     </script>
-    </br>
-    <footer>&copy;2024 All the rights are reserved!</br> Atmosoft-Kunal_Singh</footer>
+    <br>
+    <footer>&copy;2024 All the rights are reserved!<br> Atmosoft-Kunal_Singh</footer>
 </body>
 </html>
-
